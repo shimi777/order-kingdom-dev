@@ -1,0 +1,11 @@
+# gstack / tooling
+.gstack/
+.claude/
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store
+*~
+
+# office docs / scratch
+*.docx

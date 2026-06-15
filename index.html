@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ממלכת הסדר - משחק משימות משפחתי</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700;800&family=Playpen+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Assistant', 'Playpen Sans', sans-serif;
+            background-color: #fdf8f5;
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(255, 202, 212, 0.4) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(232, 232, 253, 0.45) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(250, 240, 215, 0.5) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .watercolor-card {
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 218, 185, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(139, 92, 26, 0.08);
+            border-radius: 24px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .watercolor-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px -5px rgba(139, 92, 26, 0.12);
+            border-color: rgba(255, 180, 162, 0.6);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(253, 248, 245, 0.5);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 180, 162, 0.5);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 180, 162, 0.8);
+        }
+
+        .sparkle {
+            position: absolute;
+            pointer-events: none;
+            animation: fly 1.2s ease-out forwards;
+        }
+
+        @keyframes fly {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--x), var(--y)) scale(0) rotate(var(--r)); opacity: 0; }
+        }
+
+        .water-progress {
+            background: linear-gradient(90deg, #ffd3b6 0%, #ffaaa5 50%, #f7d6e0 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .water-progress::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: wave 2s infinite linear;
+        }
+        @keyframes wave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .room-medallion:hover .room-image-container {
+            transform: scale(1.03);
+            box-shadow: 0 10px 25px -5px rgba(251, 191, 36, 0.35);
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12 text-slate-700">
+
+    <div class="max-w-7xl mx-auto px-4 pt-3 flex justify-start gap-2">
+        <button id="global-edit-btn" onclick="toggleGlobalEdit()" class="py-1.5 px-3 bg-white/80 hover:bg-white text-slate-600 border border-slate-200 rounded-xl text-xs font-bold shadow-sm">✏️ מצב עריכה (הורים)</button>
+        <button id="global-edit-chars-btn" onclick="openCharacterEditor()" class="hidden py-1.5 px-3 bg-white/80 hover:bg-white text-slate-500 border border-slate-200 rounded-xl text-xs font-bold shadow-sm">🎭 עריכת דמויות</button>
+        <button id="global-edit-pw-btn" onclick="changeEditPassword()" class="hidden py-1.5 px-3 bg-white/80 hover:bg-white text-slate-500 border border-slate-200 rounded-xl text-xs font-bold shadow-sm">🔑 שינוי סיסמה</button>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 pt-2 flex justify-center gap-2">
+        <button id="tab-chores" onclick="switchView('chores')" class="py-2 px-5 bg-amber-500 text-white border border-amber-500 rounded-2xl text-sm font-bold shadow-sm transition-all">🏰 ממלכת הסדר</button>
+        <button id="tab-schedule" onclick="switchView('schedule')" class="py-2 px-5 bg-white/80 hover:bg-white text-slate-600 border border-slate-200 rounded-2xl text-sm font-bold shadow-sm transition-all">📅 לו״ז</button>
+    </div>
+
+    <header class="max-w-7xl mx-auto px-4 pt-3 pb-2">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white/60 backdrop-blur-md border border-peach-200/40 rounded-3xl p-6 shadow-sm">
+            <div class="flex items-center gap-4 text-center md:text-right">
+                <div id="app-emoji" class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-4xl shadow-inner border border-amber-200 animate-pulse">
+                    🏰
+                </div>
+                <div>
+                    <h1 id="app-title" class="text-3xl font-extrabold text-amber-800 tracking-wide">ממלכת הסדר</h1>
+                    <p id="app-tagline" class="text-sm text-rose-500 font-medium mt-1">✨ הארמון המשפחתי שלנו ✨</p>
+                    <p id="app-family-line" class="text-xs text-amber-600 font-medium mt-0.5">המשפחה שלנו</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6 bg-amber-50/70 px-6 py-3 rounded-2xl border border-amber-100">
+                <div class="text-center">
+                    <span class="block text-xs text-slate-400 font-semibold uppercase">השבוע שלנו</span>
+                    <span id="current-week-display" class="text-amber-900 font-bold">שבוע 1: מנקים באהבה</span>
+                </div>
+                <div class="h-8 w-px bg-amber-200"></div>
+                <div class="text-center">
+                    <span class="block text-xs text-slate-400 font-semibold uppercase">ענן גוגל דרייב</span>
+                    <span id="sync-status-badge" class="text-xs bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full font-bold">לא מחובר</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="view-chores">
+    <main class="max-w-7xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <section class="lg:col-span-4 flex flex-col gap-6">
+
+            <div class="watercolor-card p-6 relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-24 h-24 bg-pink-100/30 rounded-full blur-xl"></div>
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-2">
+                    <span class="text-2xl">🔋</span> מד האנרגיה המשפחתי
+                </h3>
+                <p class="text-[11px] text-slate-400 mb-4">נבנה ממשימות במרחבים המשותפים וממעשי חסד משותפים!</p>
+
+                <div class="relative w-full h-8 bg-slate-100 rounded-full p-1 border border-slate-200/60 mb-6 shadow-inner">
+                    <div id="family-progress-bar" class="water-progress h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%;"></div>
+                    <div class="absolute right-1/2 top-1/2 -translate-y-1/2 translate-x-1/2 flex flex-col items-center">
+                        <div id="gift-milestone" class="w-6 h-6 rounded-full bg-white border-2 border-amber-400 flex items-center justify-center text-xs shadow-md">🎁</div>
+                    </div>
+                    <div class="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col items-center">
+                        <div id="crown-milestone" class="w-8 h-8 rounded-full bg-amber-100 border-2 border-amber-500 flex items-center justify-center text-sm shadow-md">👑</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center bg-white/60 p-3 rounded-xl border border-rose-100 mb-3">
+                    <div>
+                        <span class="text-xs text-slate-400 font-semibold block">נקודות משפחתיות שנצברו:</span>
+                        <span id="score-text" class="text-2xl font-black text-rose-500">0</span>
+                        <span class="text-xs text-slate-500 font-bold">/ <span id="max-score-text">245</span></span>
+                    </div>
+                    <div class="text-left">
+                        <span id="percentage-text" class="text-3xl font-black text-amber-500">0%</span>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-100/60 text-xs text-amber-800">
+                    <p class="font-bold flex items-center gap-1">🏆 הפרס המשפחתי השבועי:</p>
+                    <p id="active-reward-display" class="font-semibold text-slate-600 mt-1">טרם נבחר פרס לשבוע זה!</p>
+                </div>
+            </div>
+
+            <div class="watercolor-card p-6">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-2">
+                    <span class="text-2xl">📊</span> לוח הישגים אישי
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">לחצו על גיבור/ה כדי לראות את המשימות שלהם במפה:</p>
+
+                <div class="space-y-3" id="avatars-container">
+                    </div>
+
+                <button id="clear-filter-btn" class="w-full mt-4 py-2 px-3 bg-slate-100 hover:bg-slate-200/80 text-slate-600 font-bold rounded-xl text-xs transition-colors hidden" onclick="clearFilter()">
+                    <i class="fa-solid fa-filter-circle-xmark ml-1"></i> הצג משימות של כולם
+                </button>
+            </div>
+
+            <div class="watercolor-card p-6 border-pink-200/50 bg-gradient-to-br from-white/80 to-pink-50/30">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-1">
+                    <span class="text-2xl">✨</span> תיבת תודות וחסדים
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">עזרה ספונטנית בבית מעניקה נקודות משפחתיות בונוס!</p>
+
+                <form id="good-deed-form" onsubmit="submitGoodDeed(event)" class="space-y-3">
+                    <div>
+                        <!-- אפשרויות נטענות דינמית מ-config.js (ראו src/config-dom.js) -->
+                        <select id="deed-doer" class="w-full bg-white/90 border border-pink-200 rounded-xl py-2 px-3 text-xs focus:outline-none"></select>
+                    </div>
+                    <div>
+                        <input id="deed-desc" type="text" placeholder="מה קרה? (לדוגמה: ויתור מלכותי באהבה)" class="w-full bg-white/90 border border-pink-200 rounded-xl py-2 px-3 text-xs focus:outline-none" required>
+                    </div>
+                    <button type="submit" class="w-full py-2.5 px-4 bg-gradient-to-r from-pink-400 to-rose-400 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> שלח/י נקודות משפחתיות!
+                    </button>
+                </form>
+
+                <div class="mt-5 border-t border-pink-100 pt-4">
+                    <div id="deeds-feed" class="max-h-40 overflow-y-auto custom-scrollbar space-y-2 text-xs"></div>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="lg:col-span-8 flex flex-col gap-6">
+
+            <div class="watercolor-card p-6 bg-gradient-to-b from-amber-50/40 to-orange-50/20">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <span class="text-2xl">🏰</span> מפת הארמון המשפחתית
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">לחצו על תמונת חדר כלשהו כדי לצפות במשימות:</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4" id="rooms-map-grid">
+                    </div>
+            </div>
+
+            <div class="watercolor-card p-6 border-amber-200/50" id="tasks-board-container">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-amber-100 pb-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div id="active-room-icon" class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-2xl border border-amber-100">🌌</div>
+                        <div>
+                            <h2 id="active-room-title" class="text-2xl font-bold text-slate-800">מצפה הכוכבים</h2>
+                            <p id="active-room-subtitle" class="text-xs text-slate-400"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 bg-amber-50/60 px-3 py-1.5 rounded-xl border border-amber-100/60 text-xs">
+                        <span class="font-bold text-amber-800">בחדר זה יש:</span>
+                        <span id="active-room-rules" class="text-slate-500"></span>
+                    </div>
+                </div>
+
+                <div id="tasks-list" class="space-y-3"></div>
+
+                <div class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap justify-between items-center text-xs text-slate-400 gap-4">
+                    <div class="flex items-center gap-4">
+                        <span id="room-completed-count">📌 הושלמו: 0/4 משימות</span>
+                        <span id="room-completion-pct" class="font-bold text-emerald-500">0%</span>
+                    </div>
+                    <button onclick="markAllRoomTasksCompleted()" class="py-1 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-semibold">🌟 סמן הכל כנקי</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="watercolor-card p-6 bg-indigo-50/30 border-indigo-100">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-1">
+                        <span class="text-xl">📊</span> סנכרון ל-Google Drive CSV
+                    </h3>
+                    <p class="text-xs text-slate-400 mb-3">הדביקו כאן את קישור ה-Web App שקיבלתם מגווגל כדי לשמור היסטוריה בתיקיית `KingdomOfOrder` בקובץ CSV:</p>
+
+                    <div class="space-y-2">
+                        <input id="script-url-input" type="text" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-white border border-indigo-200 rounded-xl py-2 px-3 text-xs focus:outline-none">
+                        <input id="gemini-api-key-input" type="password" placeholder="🎨 מפתח Gemini API ליצירת תמונות (aistudio.google.com)" class="w-full bg-white border border-amber-200 rounded-xl py-2 px-3 text-xs focus:outline-none">
+                        <div class="flex gap-2">
+                            <button onclick="saveScriptUrl()" class="py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all">שמור הגדרות</button>
+                            <button onclick="syncToGoogleDrive('סנכרון ידני מלוח הבקרה')" class="py-2 px-4 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-rotate animate-spin-slow"></i> סנכרן כעת ל-CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="watercolor-card p-6 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-1"><span class="text-xl">⚙️</span> בקרת שבוע</h3>
+                        <p class="text-xs text-slate-400">איפוס המשימות לקראת שבוע חדש או בחירת פרסים משפחתיים.</p>
+                    </div>
+                    <div class="flex gap-3 mt-4">
+                        <button onclick="openRewardModal(100)" class="flex-1 py-2.5 px-3 bg-white hover:bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold rounded-xl">🎁 בחר פרס 100%</button>
+                        <button onclick="triggerResetConfirmation()" class="flex-1 py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold rounded-xl text-xs">♻️ איפוס שבועי</button>
+                    </div>
+                    <button onclick="openFridayReveal()" class="relative w-full mt-3 py-2.5 px-3 bg-amber-400 hover:bg-amber-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+                        🌟 חשיפת שישי — מי זכה בפרס הסודי?
+                        <span id="friday-badge" class="hidden absolute top-1 right-2 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+    </main>
+    </div><!-- /view-chores -->
+
+    <div id="view-schedule" class="hidden max-w-7xl mx-auto px-4 mt-6 flex flex-col gap-6">
+
+        <div class="flex justify-center gap-2">
+            <button id="subtab-weekly" onclick="switchScheduleSub('weekly')" class="py-1.5 px-4 bg-amber-500 text-white border border-amber-500 rounded-xl text-xs font-bold shadow-sm">📅 שבועי</button>
+            <button id="subtab-monthly" onclick="switchScheduleSub('monthly')" class="py-1.5 px-4 bg-white/80 hover:bg-white text-slate-600 border border-slate-200 rounded-xl text-xs font-bold shadow-sm">🗓️ חודשי</button>
+            <button id="subtab-gcal" onclick="switchScheduleSub('gcal')" class="py-1.5 px-4 bg-white/80 hover:bg-white text-slate-600 border border-slate-200 rounded-xl text-xs font-bold shadow-sm">🌐 יומן גוגל</button>
+        </div>
+
+        <div class="flex flex-col items-center gap-1">
+            <button onclick="syncScheduleToCalendar()" class="py-1.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-500 rounded-xl text-xs font-bold shadow-sm flex items-center gap-1">🔄 סנכרן ליומן גוגל</button>
+            <span class="text-[10px] text-slate-400">שולח את הלו״ז והאירועים ליומן "ממלכת הסדר 📅" שלכם</span>
+        </div>
+
+        <div id="sub-weekly">
+            <div class="watercolor-card p-6">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2"><span class="text-2xl">📅</span> לו״ז שבועי</h3>
+                    <button onclick="openDinnerEditor()" class="py-1.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold whitespace-nowrap">🍽️ ערוך תפריט</button>
+                </div>
+                <p class="text-[11px] text-slate-400 mb-4">חוגים ופעילויות שחוזרים כל שבוע + מה אוכלים בערב. נשמר לתמיד ואינו מתאפס באיפוס השבועי.</p>
+                <div class="overflow-x-auto custom-scrollbar pb-2">
+                    <table class="w-full border-collapse text-xs">
+                        <thead id="schedule-thead"></thead>
+                        <tbody id="schedule-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="sub-monthly" class="hidden">
+            <div class="watercolor-card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <button onclick="monthPrev()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-xl flex items-center justify-center">›</button>
+                    <div class="flex items-center gap-3">
+                        <h3 id="month-title" class="text-xl font-bold text-slate-800"></h3>
+                        <button onclick="monthToday()" class="py-1 px-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-100 rounded-lg text-[11px] font-bold">היום</button>
+                    </div>
+                    <button onclick="monthNext()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-xl flex items-center justify-center">‹</button>
+                </div>
+                <p class="text-[11px] text-slate-400 mb-3">אירועים חד-פעמיים בתאריך מסוים (ימי הולדת, טיולים, תורים). לחצו על יום כדי להוסיף או לערוך.</p>
+                <div class="grid grid-cols-7 gap-1 mb-1" id="month-daynames"></div>
+                <div class="grid grid-cols-7 gap-1" id="month-grid"></div>
+            </div>
+        </div>
+
+        <div id="sub-gcal" class="hidden">
+            <div class="watercolor-card p-6">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-2"><span class="text-2xl">🌐</span> יומן גוגל</h3>
+                <p class="text-[11px] text-slate-400 mb-4">אירועים שנמשכים מיומן גוגל שלכם (קריאה בלבד). הזינו את שם היומן בדיוק כפי שהוא מופיע בהגדרות גוגל קלנדר.</p>
+                <div class="flex gap-2 mb-3">
+                    <input id="gcal-name-input" type="text" placeholder="שם היומן בגוגל (למשל: משפחה)" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                    <button onclick="fetchGcalEvents()" class="py-2 px-4 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-sm whitespace-nowrap">🔄 רענן</button>
+                </div>
+                <div id="gcal-status" class="text-xs text-slate-400 mb-3"></div>
+                <div id="gcal-events" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <div class="watercolor-card p-6">
+            <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4"><span class="text-2xl">🛒</span> רשימת קניות</h3>
+            <div class="flex gap-2 mb-4">
+                <input id="shopping-input" type="text" placeholder="הוסיפו מצרך..." onkeydown="if(event.key==='Enter')addShoppingItem()" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                <button onclick="addShoppingItem()" class="py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm whitespace-nowrap">➕ הוסף</button>
+            </div>
+            <div id="shopping-list" class="space-y-2"></div>
+            <button onclick="clearBoughtItems()" class="w-full mt-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs">🧹 נקה שנקנו</button>
+        </div>
+
+    </div><!-- /view-schedule -->
+
+    <div id="date-editor-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 relative">
+            <div class="flex items-center justify-between mb-4">
+                <h3 id="date-editor-title" class="text-xl font-black text-amber-800">📅 אירועי היום</h3>
+                <button onclick="closeDateEditor()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">✕</button>
+            </div>
+            <input type="hidden" id="date-editor-key">
+            <textarea id="date-editor-text" rows="6" placeholder="לדוגמה: 16:00 חוג ציור&#10;יום הולדת לסבתא — לקנות מתנה" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300 resize-y"></textarea>
+            <div class="flex gap-3 mt-5">
+                <button onclick="saveDateEditor()" class="flex-1 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm">💾 שמירה</button>
+                <button onclick="closeDateEditor()" class="py-2.5 px-4 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dinner-editor-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-black text-amber-800">🍽️ תפריט ארוחות ערב</h3>
+                <button onclick="closeDinnerEditor()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">✕</button>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">הוסיפו או מחקו מנות. הן יופיעו ברשימה הנפתחת של ארוחת הערב בכל יום.</p>
+            <div class="flex gap-2 mb-4">
+                <input id="dinner-option-input" type="text" placeholder="הוסיפו מנה..." onkeydown="if(event.key==='Enter')addDinnerOption()" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                <button onclick="addDinnerOption()" class="py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm whitespace-nowrap">➕ הוסף</button>
+            </div>
+            <div id="dinner-options-list" class="space-y-2"></div>
+            <button onclick="closeDinnerEditor()" class="w-full mt-5 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">סגור</button>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center relative">
+            <h3 class="text-xl font-extrabold text-rose-800 mb-2">איפוס שבועי</h3>
+            <p class="text-xs text-slate-500 mb-6">האם לאפס את המשימות? נקודות אישיות ומשפחתיות יתאפסו והשורה תיכתב ב-CSV בדרייב.</p>
+            <div class="flex gap-3">
+                <button onclick="confirmReset()" class="flex-1 py-2.5 px-4 bg-rose-500 text-white font-bold rounded-xl text-xs">כן, אופסו</button>
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 px-4 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reward-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 relative">
+            <h3 class="text-xl font-black text-amber-800 mb-4">🏆 יעד משפחתי (100%)</h3>
+            <div id="modal-rewards-list" class="space-y-3"></div>
+            <button onclick="closeRewardModal()" class="mt-4 w-full py-2 bg-slate-100 text-xs font-bold rounded-xl">סגור</button>
+        </div>
+    </div>
+
+    <div id="friday-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-xl font-black text-amber-800">🌟 חשיפת שישי</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">מי שמר על החדר שלו נקי מעל 70% השבוע?</p>
+                </div>
+                <button onclick="closeFridayReveal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">✕</button>
+            </div>
+            <div id="friday-reveal-body" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <div id="task-editor-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <h3 id="task-editor-title" class="text-xl font-black text-amber-800">➕ משימה חדשה</h3>
+                <button onclick="closeTaskEditor()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">✕</button>
+            </div>
+            <input type="hidden" id="task-edit-id">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">כותרת המשימה</label>
+                    <input id="task-edit-title" type="text" placeholder="לדוגמה: ניקוי חלונות 🪟" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">תיאור קצר</label>
+                    <input id="task-edit-desc" type="text" placeholder="מה צריך לעשות בדיוק?" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 mb-1">אחראי/ת</label>
+                        <!-- אפשרויות נטענות דינמית מ-config.js (ראו src/config-dom.js) -->
+                        <select id="task-edit-char" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300"></select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 mb-1">ניקוד</label>
+                        <input id="task-edit-points" type="number" min="1" max="100" value="10" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 mb-1">סוג ניקוד</label>
+                        <select id="task-edit-family" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                            <option value="false">👤 אישי (לינקוד האדם)</option>
+                            <option value="true">🏡 משפחתי (למד האנרגיה)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 mb-1">תדירות</label>
+                        <select id="task-edit-freq" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                            <option value="weekly">📅 שבועי</option>
+                            <option value="daily">☀️ יומי</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="saveTaskEditor()" class="flex-1 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm">💾 שמירה</button>
+                <button onclick="closeTaskEditor()" class="py-2.5 px-4 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="prize-editor-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <h3 id="prize-editor-title" class="text-xl font-black text-amber-800">➕ פרס חדש</h3>
+                <button onclick="closePrizeEditor()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">✕</button>
+            </div>
+            <input type="hidden" id="prize-edit-id">
+            <div class="space-y-3">
+                <div id="prize-emoji-wrap">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">אימוג'י</label>
+                    <input id="prize-edit-emoji" type="text" placeholder="🎁" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                </div>
+                <div>
+                    <label id="prize-title-label" class="block text-[11px] font-bold text-slate-500 mb-1">שם הפרס</label>
+                    <input id="prize-edit-title" type="text" placeholder="לדוגמה: ערב משחקים מיוחד 🎲" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">תיאור</label>
+                    <input id="prize-edit-desc" type="text" placeholder="פירוט קצר על הפרס" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="savePrizeEditor()" class="flex-1 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm">💾 שמירה</button>
+                <button onclick="closePrizeEditor()" class="py-2.5 px-4 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="char-editor-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xl font-black text-amber-800">🎭 עריכת דמויות</h3>
+                <button onclick="closeCharacterEditor()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">✕</button>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">כל אחד יכול לבחור אווטאר ושם משלו 💫</p>
+            <div id="char-editor-body" class="space-y-3"></div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="saveCharacterEditor()" class="flex-1 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm">💾 שמירה</button>
+                <button onclick="closeCharacterEditor()" class="py-2.5 px-4 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deed-editor-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 relative">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-xl font-black text-amber-800">✏️ עריכת מעשה חסד</h3>
+                <button onclick="closeGoodDeedEditor()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">✕</button>
+            </div>
+            <input type="hidden" id="deed-edit-id">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">מי עשה את החסד?</label>
+                    <!-- אפשרויות נטענות דינמית מ-config.js (ראו src/config-dom.js) -->
+                    <select id="deed-edit-doer" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300"></select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">מה קרה?</label>
+                    <input id="deed-edit-desc" type="text" placeholder="תיאור מעשה החסד" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:outline-none focus:border-amber-300">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="saveGoodDeedEditor()" class="flex-1 py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm">💾 שמירה</button>
+                <button onclick="closeGoodDeedEditor()" class="py-2.5 px-4 bg-slate-100 text-slate-600 font-bold rounded-xl text-sm">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="custom-toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl px-5 py-3 flex items-start gap-3 min-w-64 max-w-xs transition-all duration-500 opacity-0 translate-y-20 pointer-events-none">
+        <div class="text-xl mt-0.5">💬</div>
+        <div>
+            <p id="toast-title" class="font-bold text-sm text-slate-800"></p>
+            <p id="toast-message" class="text-xs text-slate-500 mt-0.5"></p>
+        </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
