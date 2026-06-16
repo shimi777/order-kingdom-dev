@@ -15,6 +15,7 @@ import * as prizes from './prizes.js';
 import * as sync from './sync.js';
 import * as rooms from './rooms.js';
 import { applyConfigToDom } from './config-dom.js';
+import { renderDailySaying } from './daily-saying.js';
 
 // ---- Window exposure: every identifier reachable from an inline handler ----
 Object.assign(window, {
@@ -88,6 +89,7 @@ window.charEditStaging = {};
 // ---- init: faithful port of the original window.onload (+ setInterval) ----
 function init() {
     applyConfigToDom();   // כותרת + רשימות נפתחות מתוך config.js
+    renderDailySaying();  // 💡 משפט חכם יומי
     state.loadGameState();
     tasks.applyCharacterOverrides();
     state.calculateAllScores();
@@ -99,7 +101,7 @@ function init() {
     if (_gcalName) document.getElementById("gcal-name-input").value = _gcalName;
     render.switchView('chores');
     // עדכון אחוזי טריות, דגימה, ובונוס שבועי — כל 5 דקות
-    setInterval(() => { state.sampleRoomHistory(); state.decayTasks(); state.calculateAllScores(); render.renderAll(); }, 5 * 60 * 1000);
+    setInterval(() => { state.sampleRoomHistory(); state.decayTasks(); state.calculateAllScores(); render.renderAll(); renderDailySaying(); }, 5 * 60 * 1000);
 }
 
 // Module scripts are deferred, so the DOM is parsed by the time this runs.

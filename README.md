@@ -74,6 +74,8 @@ index.html              — שלד ה-DOM + עיצוב (Tailwind via CDN)
 src/
   config.js             — ⚙️ קובץ ההתאמה האישית היחיד (נתוני המשפחה)
   config-dom.js         — מיישם את config על הכותרת והרשימות הנפתחות
+  sayings.js            — מאגר המשפטים ל"משפט חכם יומי" (ניתן להחלפה)
+  daily-saying.js       — בוחר ומציג משפט אחד ליום (מתחלף בחצות)
   constants.js          — קבועים מבניים + re-export מ-config.js
   state.js              — gameState, ניקוד, decay, שמירה ל-localStorage
   render.js             — רינדור DOM, מעבר מסכים, toast
